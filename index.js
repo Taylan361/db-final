@@ -75,3 +75,37 @@ app.delete("/api/theses/:id", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Sunucu ${PORT} portunda çalışıyor...`);
 });
+
+// --- YARDIMCI LİSTELERİ GETİRME (DROPDOWN İÇİN) ---
+
+// Yazarları ve Danışmanları Getir
+app.get("/api/people", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM People ORDER BY FirstName ASC");
+    res.json(result.rows);
+  } catch (err) { res.status(500).json(err); }
+});
+
+// Enstitüleri Getir
+app.get("/api/institutes", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM Institutes ORDER BY InstituteName ASC");
+    res.json(result.rows);
+  } catch (err) { res.status(500).json(err); }
+});
+
+// Dilleri Getir
+app.get("/api/languages", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM Languages");
+    res.json(result.rows);
+  } catch (err) { res.status(500).json(err); }
+});
+
+// Tez Türlerini Getir
+app.get("/api/types", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM ThesisTypes");
+    res.json(result.rows);
+  } catch (err) { res.status(500).json(err); }
+});

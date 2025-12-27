@@ -13,3 +13,9 @@ export const api = axios.create({
 export const getTheses = () => api.get('/api/theses');
 export const addThesis = (thesisData) => api.post('/api/theses', thesisData);
 export const deleteThesis = (id) => api.delete(`/api/theses/${id}`);
+// ... önceki kodlar aynı kalsın ...
+
+export const getPeople = () => api.get('/api/people');
+export const getInstitutes = () => api.get('/api/institutes');
+export const getLanguages = () => api.get('/api/languages');
+export const getTypes = () => api.get('/api/types');

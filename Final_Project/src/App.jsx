@@ -1,99 +1,114 @@
 import { useEffect, useState } from "react";
-import { getTheses, addThesis, deleteThesis } from "./api";
-import { Container, Table, Button, Form, Row, Col, Alert, Spinner, Card } from "react-bootstrap";
+import { getTheses, addThesis, deleteThesis, getPeople, getInstitutes, getLanguages, getTypes } from "./api";
+import { Container, Table, Button, Form, Row, Col, Alert, Spinner, Card, Modal, Badge } from "react-bootstrap";
 
 function App() {
   const [theses, setTheses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  
+  // Dropdownlar için tutacağımız listeler
+  const [people, setPeople] = useState([]);
+  const [institutes, setInstitutes] = useState([]);
+  const [languages, setLanguages] = useState([]);
+  const [types, setTypes] = useState([]);
 
-  // Form Verileri için State (Başlangıçta boş)
+  const [loading, setLoading] = useState(true);
+  
+  // Modal (Detay Penceresi) için State
+  const [showModal, setShowModal] = useState(false);
+  const [selectedThesis, setSelectedThesis] = useState(null);
+
+  // Form Verileri
   const [formData, setFormData] = useState({
     thesisNo: "",
     title: "",
     abstract: "",
-    year: "",
+    year: new Date().getFullYear(),
     pageNum: "",
-    typeId: 1,      // Varsayılan değerler (ID olmak zorunda)
-    instituteId: 1,
-    authorId: 1,
-    supervisorId: 2,
-    languageId: 1
+    typeId: "",      
+    instituteId: "",
+    authorId: "",
+    supervisorId: "",
+    languageId: ""
   });
 
-  // Verileri Çekme Fonksiyonu
-  const fetchTheses = () => {
-    getTheses()
-      .then((res) => {
-        setTheses(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setError("Veriler yüklenemedi.");
-        setLoading(false);
-      });
-  };
-
+  // Sayfa açılınca tüm verileri çek
   useEffect(() => {
-    fetchTheses();
+    const loadAllData = async () => {
+      try {
+        const [thesesRes, peopleRes, instRes, langRes, typeRes] = await Promise.all([
+          getTheses(), getPeople(), getInstitutes(), getLanguages(), getTypes()
+        ]);
+
+        setTheses(thesesRes.data);
+        setPeople(peopleRes.data);
+        setInstitutes(instRes.data);
+        setLanguages(langRes.data);
+        setTypes(typeRes.data);
+        
+        setLoading(false);
+      } catch (err) {
+        console.error("Veri yükleme hatası:", err);
+        setLoading(false);
+      }
+    };
+    loadAllData();
   }, []);
 
-  // Form Değişince Çalışır
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Ekleme İşlemi
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await addThesis(formData);
       alert("Tez Başarıyla Eklendi!");
-      fetchTheses(); // Listeyi yenile
-      // Formu temizle (İstersen)
+      const res = await getTheses(); // Listeyi yenile
+      setTheses(res.data);
     } catch (err) {
       alert("Hata: " + err.message);
     }
   };
 
-  // Silme İşlemi
   const handleDelete = async (id) => {
-    if (window.confirm("Bu tezi silmek istediğinize emin misiniz?")) {
-      try {
-        await deleteThesis(id);
-        fetchTheses(); // Listeyi yenile
-      } catch (err) {
-        alert("Silinirken hata oluştu.");
-      }
+    if (window.confirm("Silmek istediğinize emin misiniz?")) {
+      await deleteThesis(id);
+      const res = await getTheses();
+      setTheses(res.data);
     }
+  };
+
+  // Detay Butonuna Tıklanınca
+  const handleShowDetail = (thesis) => {
+    setSelectedThesis(thesis);
+    setShowModal(true);
   };
 
   return (
     <Container className="mt-5 mb-5">
-      <h2 className="text-center mb-4">GTS - Tez Yönetim Paneli</h2>
+      <h2 className="text-center mb-4 text-primary fw-bold">GTS - Lisansüstü Tez Sistemi</h2>
 
       {/* --- EKLEME FORMU --- */}
-      <Card className="mb-4 p-4 shadow-sm">
-        <h4>Yeni Tez Ekle</h4>
+      <Card className="mb-4 p-4 shadow border-0 bg-light">
+        <h5 className="mb-3 text-secondary">Yeni Tez Girişi</h5>
         <Form onSubmit={handleSubmit}>
           <Row>
             <Col md={2}>
               <Form.Group className="mb-3">
                 <Form.Label>Tez No</Form.Label>
-                <Form.Control type="number" name="thesisNo" placeholder="Örn: 1006" onChange={handleChange} required />
+                <Form.Control type="number" name="thesisNo" onChange={handleChange} required />
               </Form.Group>
             </Col>
             <Col md={8}>
               <Form.Group className="mb-3">
                 <Form.Label>Başlık</Form.Label>
-                <Form.Control type="text" name="title" placeholder="Tez başlığı..." onChange={handleChange} required />
+                <Form.Control type="text" name="title" onChange={handleChange} required />
               </Form.Group>
             </Col>
             <Col md={2}>
               <Form.Group className="mb-3">
                 <Form.Label>Yıl</Form.Label>
-                <Form.Control type="number" name="year" onChange={handleChange} required />
+                <Form.Control type="number" name="year" defaultValue={2025} onChange={handleChange} required />
               </Form.Group>
             </Col>
           </Row>
@@ -103,53 +118,155 @@ function App() {
             <Form.Control as="textarea" rows={3} name="abstract" onChange={handleChange} required />
           </Form.Group>
           
+          {/* --- DROPDOWN SEÇİMLERİ --- */}
           <Row>
-            <Col><Form.Control type="number" name="pageNum" placeholder="Sayfa Sayısı" onChange={handleChange} required /></Col>
-            <Col><Form.Control type="number" name="typeId" placeholder="Type ID" onChange={handleChange} required /></Col>
-            <Col><Form.Control type="number" name="instituteId" placeholder="Institute ID" onChange={handleChange} required /></Col>
-            <Col><Form.Control type="number" name="authorId" placeholder="Author ID" onChange={handleChange} required /></Col>
-            <Col><Form.Control type="number" name="supervisorId" placeholder="Sup. ID" onChange={handleChange} required /></Col>
-            <Col><Form.Control type="number" name="languageId" placeholder="Lang ID" onChange={handleChange} required /></Col>
+             <Col md={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>Yazar</Form.Label>
+                <Form.Select name="authorId" onChange={handleChange} required>
+                  <option value="">Seçiniz...</option>
+                  {people.map(p => (
+                    <option key={p.personid} value={p.personid}>{p.firstname} {p.lastname} ({p.title})</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            
+            <Col md={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>Danışman</Form.Label>
+                <Form.Select name="supervisorId" onChange={handleChange} required>
+                  <option value="">Seçiniz...</option>
+                  {people.map(p => (
+                    <option key={p.personid} value={p.personid}>{p.firstname} {p.lastname}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+
+            <Col md={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>Enstitü</Form.Label>
+                <Form.Select name="instituteId" onChange={handleChange} required>
+                  <option value="">Seçiniz...</option>
+                  {institutes.map(i => (
+                    <option key={i.instituteid} value={i.instituteid}>{i.institutename}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+          </Row>
+
+          <Row>
+            <Col md={4}>
+                <Form.Group className="mb-3">
+                    <Form.Label>Dil</Form.Label>
+                    <Form.Select name="languageId" onChange={handleChange} required>
+                    <option value="">Seçiniz...</option>
+                    {languages.map(l => (
+                        <option key={l.languageid} value={l.languageid}>{l.languagename}</option>
+                    ))}
+                    </Form.Select>
+                </Form.Group>
+            </Col>
+            <Col md={4}>
+                <Form.Group className="mb-3">
+                    <Form.Label>Tür</Form.Label>
+                    <Form.Select name="typeId" onChange={handleChange} required>
+                    <option value="">Seçiniz...</option>
+                    {types.map(t => (
+                        <option key={t.typeid} value={t.typeid}>{t.typename}</option>
+                    ))}
+                    </Form.Select>
+                </Form.Group>
+            </Col>
+            <Col md={4}>
+                 <Form.Group className="mb-3">
+                    <Form.Label>Sayfa Sayısı</Form.Label>
+                    <Form.Control type="number" name="pageNum" onChange={handleChange} required />
+                </Form.Group>
+            </Col>
           </Row>
           
-          <Button variant="primary" type="submit" className="mt-3 w-100">
-            Tezi Kaydet
+          <Button variant="success" type="submit" className="w-100 fw-bold">
+            + Sisteme Kaydet
           </Button>
         </Form>
       </Card>
 
       {/* --- LİSTELEME TABLOSU --- */}
-      {error && <Alert variant="danger">{error}</Alert>}
       {loading ? (
-        <div className="text-center"><Spinner animation="border" /></div>
+        <div className="text-center"><Spinner animation="border" variant="primary" /></div>
       ) : (
-        <Table striped bordered hover responsive className="shadow-sm">
-          <thead className="bg-dark text-white">
-            <tr>
-              <th>No</th>
-              <th>Başlık</th>
-              <th>Yıl</th>
-              <th>Sayfa</th>
-              <th>İşlemler</th>
-            </tr>
-          </thead>
-          <tbody>
-            {theses.map((thesis) => (
-              <tr key={thesis.thesisno}>
-                <td>{thesis.thesisno}</td>
-                <td>{thesis.title}</td>
-                <td>{thesis.year}</td>
-                <td>{thesis.pagenum}</td>
-                <td>
-                  <Button variant="danger" size="sm" onClick={() => handleDelete(thesis.thesisno)}>
-                    Sil
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
+        <Card className="shadow-sm">
+            <Table hover responsive className="m-0 align-middle">
+            <thead className="table-dark">
+                <tr>
+                <th>No</th>
+                <th>Başlık</th>
+                <th>Yıl</th>
+                <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {theses.map((thesis) => (
+                <tr key={thesis.thesisno}>
+                    <td><Badge bg="secondary">{thesis.thesisno}</Badge></td>
+                    <td className="fw-bold text-dark">{thesis.title}</td>
+                    <td>{thesis.year}</td>
+                    <td>
+                    <Button variant="info" size="sm" className="me-2 text-white" onClick={() => handleShowDetail(thesis)}>
+                        👁️ Detay
+                    </Button>
+                    <Button variant="danger" size="sm" onClick={() => handleDelete(thesis.thesisno)}>
+                        🗑️ Sil
+                    </Button>
+                    </td>
+                </tr>
+                ))}
+            </tbody>
+            </Table>
+        </Card>
       )}
+
+      {/* --- DETAY MODALI (POPUP) --- */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Tez Detayları</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedThesis && (
+            <div>
+              <h4 className="text-primary">{selectedThesis.title}</h4>
+              <hr />
+              <p><strong>Özet (Abstract):</strong></p>
+              <div className="p-3 bg-light border rounded mb-3">
+                  {selectedThesis.abstract}
+              </div>
+              
+              <Row>
+                  <Col md={6}>
+                      <p><strong>Tez No:</strong> {selectedThesis.thesisno}</p>
+                      <p><strong>Yıl:</strong> {selectedThesis.year}</p>
+                      <p><strong>Sayfa Sayısı:</strong> {selectedThesis.pagenum}</p>
+                  </Col>
+                  {/* Burası şu an ID gösterir. İstersen bunları da eşleştirebiliriz ama detay aramada çözülecek */}
+                  <Col md={6}>
+                      <p><strong>Yazar ID:</strong> {selectedThesis.authorid}</p>
+                      <p><strong>Danışman ID:</strong> {selectedThesis.supervisorid}</p>
+                      <p><strong>Enstitü ID:</strong> {selectedThesis.instituteid}</p>
+                  </Col>
+              </Row>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
+            Kapat
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
     </Container>
   );
 }
