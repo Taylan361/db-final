@@ -130,16 +130,17 @@ function App() {
         <Form onSubmit={handleSearchSubmit}>
           <Row>
             <Col md={4}>
-              <Form.Group className="mb-2">
-                <Form.Control 
-                  type="text" 
-                  name="title" 
-                  placeholder="Tez Başlığında Ara..." 
-                  value={searchParams.title}
-                  onChange={handleSearchChange} 
-                />
-              </Form.Group>
-            </Col>
+  <Form.Group className="mb-2">
+    {/* Kullanıcıya hem başlık hem özet aradığımızı söyleyelim */}
+    <Form.Control 
+      type="text" 
+      name="title" 
+      placeholder="Kelime Ara (Başlık veya Özet)..." 
+      value={searchParams.title}
+      onChange={handleSearchChange} 
+    />
+  </Form.Group>
+</Col>
             
             <Col md={3}>
               <Form.Select name="authorId" value={searchParams.authorId} onChange={handleSearchChange}>

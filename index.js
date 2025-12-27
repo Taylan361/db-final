@@ -109,3 +109,67 @@ app.get("/api/types", async (req, res) => {
     res.json(result.rows);
   } catch (err) { res.status(500).json(err); }
 });
+
+// --- GELİŞTİRİLMİŞ DETAYLI ARAMA ---
+app.get("/api/search", async (req, res) => {
+  try {
+    const { title, authorId, typeId, instituteId, year } = req.query;
+
+    console.log("Gelen Arama İsteği:", req.query); // Terminalde ne geldiğini gör!
+
+    let sqlQuery = `SELECT * FROM Theses WHERE 1=1`;
+    const values = [];
+    let paramCounter = 1;
+
+    // 1. AKILLI METİN ARAMA (Hem Başlık Hem Özet)
+    // Kullanıcı "title" kutusuna yazsa bile biz özete de bakalım.
+    if (title && title.trim() !== "") {
+      sqlQuery += ` AND (Title ILIKE $${paramCounter} OR Abstract ILIKE $${paramCounter})`;
+      values.push(`%${title}%`);
+      paramCounter++;
+    }
+
+    // 2. YAZAR FİLTRESİ (Boş değilse ve sayıysa ekle)
+    if (authorId && authorId !== "" && !isNaN(authorId)) {
+      sqlQuery += ` AND AuthorID = $${paramCounter}`;
+      values.push(parseInt(authorId));
+      paramCounter++;
+    }
+
+    // 3. TÜR FİLTRESİ
+    if (typeId && typeId !== "" && !isNaN(typeId)) {
+      sqlQuery += ` AND TypeID = $${paramCounter}`;
+      values.push(parseInt(typeId));
+      paramCounter++;
+    }
+
+    // 4. ENSTİTÜ FİLTRESİ
+    if (instituteId && instituteId !== "" && !isNaN(instituteId)) {
+      sqlQuery += ` AND InstituteID = $${paramCounter}`;
+      values.push(parseInt(instituteId));
+      paramCounter++;
+    }
+
+    // 5. YIL FİLTRESİ
+    if (year && year.trim() !== "") {
+      sqlQuery += ` AND Year = $${paramCounter}`;
+      values.push(parseInt(year));
+      paramCounter++;
+    }
+
+    console.log("Çalışan SQL:", sqlQuery); // Hangi sorguyu attığını gör
+    console.log("Değerler:", values);
+
+    const result = await pool.query(sqlQuery, values);
+    
+    if (result.rows.length === 0) {
+        console.log("Sonuç bulunamadı!");
+    }
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("Arama Hatası:", err.message);
+    res.status(500).send("Arama sırasında sunucu hatası: " + err.message);
+  }
+});
