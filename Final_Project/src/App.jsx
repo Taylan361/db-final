@@ -1,10 +1,31 @@
 import { useEffect, useState } from "react";
-import { getTheses, addThesis, deleteThesis, getPeople, getInstitutes, getLanguages, getTypes } from "./api";
+// DİKKAT: searchTheses buraya eklendi!
+import { getTheses, addThesis, deleteThesis, getPeople, getInstitutes, getLanguages, getTypes, searchTheses , addPerson} from "./api";
 import { Container, Table, Button, Form, Row, Col, Alert, Spinner, Card, Modal, Badge } from "react-bootstrap";
 
 function App() {
 
-  // Arama Kriterleri State'i
+  // Kişi Ekleme Modalı için State
+  const [showPersonModal, setShowPersonModal] = useState(false);
+  const [newPerson, setNewPerson] = useState({ firstName: "", lastName: "", title: "Student", email: "" });
+  const [theses, setTheses] = useState([]);
+  
+  // Dropdown listeleri
+  const [people, setPeople] = useState([]);
+  const [institutes, setInstitutes] = useState([]);
+  const [languages, setLanguages] = useState([]);
+  const [types, setTypes] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  
+  // Arama Sonucu Bildirimi İçin State
+  const [isSearchActive, setIsSearchActive] = useState(false);
+
+  // Modal (Detay Penceresi)
+  const [showModal, setShowModal] = useState(false);
+  const [selectedThesis, setSelectedThesis] = useState(null);
+
+  // Arama Kriterleri
   const [searchParams, setSearchParams] = useState({
     title: "",
     authorId: "",
@@ -13,21 +34,7 @@ function App() {
     year: ""
   });
 
-  const [theses, setTheses] = useState([]);
-  
-  // Dropdownlar için tutacağımız listeler
-  const [people, setPeople] = useState([]);
-  const [institutes, setInstitutes] = useState([]);
-  const [languages, setLanguages] = useState([]);
-  const [types, setTypes] = useState([]);
-
-  const [loading, setLoading] = useState(true);
-  
-  // Modal (Detay Penceresi) için State
-  const [showModal, setShowModal] = useState(false);
-  const [selectedThesis, setSelectedThesis] = useState(null);
-
-  // Form Verileri
+  // Ekleme Formu Verileri
   const [formData, setFormData] = useState({
     thesisNo: "",
     title: "",
@@ -41,7 +48,7 @@ function App() {
     languageId: ""
   });
 
-  // Sayfa açılınca tüm verileri çek
+  // Sayfa Açılınca Verileri Yükle
   useEffect(() => {
     const loadAllData = async () => {
       try {
@@ -64,83 +71,111 @@ function App() {
     loadAllData();
   }, []);
 
+  // Form Input Yönetimi
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleSearchChange = (e) => {
+    setSearchParams({ ...searchParams, [e.target.name]: e.target.value });
+  };
+
+  // --- ARAMA İŞLEMİ ---
+  const handleSearchSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setIsSearchActive(true); // Arama yapıldığını işaretle
+
+    try {
+      const res = await searchTheses(searchParams);
+      setTheses(res.data);
+      setLoading(false);
+    } catch (err) {
+      console.error("Arama hatası:", err);
+      alert("Arama sırasında hata oluştu. Sunucu konsoluna bakınız.");
+      setLoading(false);
+    }
+  };
+
+  // --- ARAMAYI TEMİZLE ---
+  const handleClearSearch = async () => {
+    setSearchParams({ title: "", authorId: "", typeId: "", instituteId: "", year: "" });
+    setIsSearchActive(false); // Bildirimi kapat
+    setLoading(true);
+    const res = await getTheses();
+    setTheses(res.data);
+    setLoading(false);
+  };
+
+  // --- EKLEME İŞLEMİ ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await addThesis(formData);
       alert("Tez Başarıyla Eklendi!");
-      const res = await getTheses(); // Listeyi yenile
+      // Listeyi yenile
+      const res = await getTheses(); 
       setTheses(res.data);
     } catch (err) {
-      alert("Hata: " + err.message);
+      alert("Ekleme Hatası: " + err.message);
     }
   };
 
+  // --- SİLME İŞLEMİ ---
   const handleDelete = async (id) => {
     if (window.confirm("Silmek istediğinize emin misiniz?")) {
-      await deleteThesis(id);
-      const res = await getTheses();
-      setTheses(res.data);
+      try {
+        await deleteThesis(id);
+        const res = await getTheses();
+        setTheses(res.data);
+      } catch (err) {
+        alert("Silme hatası oluştu.");
+      }
     }
   };
 
-  // Detay Butonuna Tıklanınca
+  // Yeni Kişi Kaydetme
+  const handleAddPerson = async () => {
+    try {
+      await addPerson(newPerson);
+      alert("Yeni kişi başarıyla eklendi!");
+      setShowPersonModal(false); // Modalı kapat
+      setNewPerson({ firstName: "", lastName: "", title: "Student", email: "" }); // Formu temizle
+      
+      // Listeyi güncelle ki yeni kişiyi dropdown'da görelim
+      const peopleRes = await getPeople();
+      setPeople(peopleRes.data);
+    } catch (err) {
+      alert("Kişi eklenemedi: " + err.message);
+    }
+  };
+
+  // Detay Göster
   const handleShowDetail = (thesis) => {
     setSelectedThesis(thesis);
     setShowModal(true);
   };
 
-  // Arama inputları değişince
-  const handleSearchChange = (e) => {
-    setSearchParams({ ...searchParams, [e.target.name]: e.target.value });
-  };
-
-  // Arama Butonuna Basınca
-  const handleSearchSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      // Backend'deki search rotasına istek at
-      const res = await searchTheses(searchParams);
-      setTheses(res.data); // Tabloyu gelen sonuçlarla güncelle
-      setLoading(false);
-    } catch (err) {
-      alert("Arama yapılamadı!");
-      setLoading(false);
-    }
-  };
-
-  // Filtreleri Temizle
-  const handleClearSearch = async () => {
-    setSearchParams({ title: "", authorId: "", typeId: "", instituteId: "", year: "" });
-    const res = await getTheses(); // Tüm listeyi geri getir
-    setTheses(res.data);
-  };
-
   return (
     <Container className="mt-5 mb-5">
       <h2 className="text-center mb-4 text-primary fw-bold">GTS - Lisansüstü Tez Sistemi</h2>
+
       {/* --- DETAYLI ARAMA PANELİ --- */}
       <Card className="mb-4 p-4 shadow-sm border-primary">
         <h5 className="mb-3 text-primary">🔍 Detaylı Tez Arama</h5>
         <Form onSubmit={handleSearchSubmit}>
           <Row>
             <Col md={4}>
-  <Form.Group className="mb-2">
-    {/* Kullanıcıya hem başlık hem özet aradığımızı söyleyelim */}
-    <Form.Control 
-      type="text" 
-      name="title" 
-      placeholder="Kelime Ara (Başlık veya Özet)..." 
-      value={searchParams.title}
-      onChange={handleSearchChange} 
-    />
-  </Form.Group>
-</Col>
+              <Form.Group className="mb-2">
+                <Form.Control 
+                  type="text" 
+                  name="title" 
+                  placeholder="Kelime Ara (Başlık veya Özet)..." 
+                  value={searchParams.title}
+                  onChange={handleSearchChange} 
+                />
+              </Form.Group>
+            </Col>
             
             <Col md={3}>
               <Form.Select name="authorId" value={searchParams.authorId} onChange={handleSearchChange}>
@@ -178,10 +213,26 @@ function App() {
         </Form>
       </Card>
 
-      {/* --- EKLEME FORMU --- */}
+      {/* --- ARAMA SONUÇ BİLDİRİMİ (YENİ) --- */}
+      {isSearchActive && (
+        <Alert variant="info" className="d-flex justify-content-between align-items-center shadow-sm mb-4">
+          <span>
+            <strong>Sonuçlar:</strong> Kriterlerinize uygun <strong>{theses.length}</strong> tez bulundu.
+          </span>
+          <Button variant="outline-info" size="sm" onClick={handleClearSearch}>Listeyi Sıfırla</Button>
+        </Alert>
+      )}
+
+      {/* --- YENİ TEZ GİRİŞ FORMU --- */}
       <Card className="mb-4 p-4 shadow border-0 bg-light">
-        <h5 className="mb-3 text-secondary">Yeni Tez Girişi</h5>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+            <h5 className="text-secondary m-0">Yeni Tez Girişi</h5>
+            <Button variant="outline-primary" size="sm" onClick={() => setShowPersonModal(true)}>
+                + Yeni Kişi/Yazar Ekle
+            </Button>
+        </div>
         <Form onSubmit={handleSubmit}>
+        {/* ... form kodları aynı kalsın ... */}
           <Row>
             <Col md={2}>
               <Form.Group className="mb-3">
@@ -208,7 +259,6 @@ function App() {
             <Form.Control as="textarea" rows={3} name="abstract" onChange={handleChange} required />
           </Form.Group>
           
-          {/* --- DROPDOWN SEÇİMLERİ --- */}
           <Row>
              <Col md={4}>
               <Form.Group className="mb-3">
@@ -278,7 +328,7 @@ function App() {
             </Col>
           </Row>
           
-          <Button variant="success" type="submit" className="w-100 fw-bold">
+          <Button variant="success" type="submit" className="w-100 fw-bold mt-3">
             + Sisteme Kaydet
           </Button>
         </Form>
@@ -301,15 +351,16 @@ function App() {
             <tbody>
                 {theses.map((thesis) => (
                 <tr key={thesis.thesisno}>
+                    {/* DÜZELTME: Küçük harf kullanımı */}
                     <td><Badge bg="secondary">{thesis.thesisno}</Badge></td>
                     <td className="fw-bold text-dark">{thesis.title}</td>
                     <td>{thesis.year}</td>
                     <td>
                     <Button variant="info" size="sm" className="me-2 text-white" onClick={() => handleShowDetail(thesis)}>
-                         Detay
+                        Detay
                     </Button>
                     <Button variant="danger" size="sm" onClick={() => handleDelete(thesis.thesisno)}>
-                         Sil
+                        Sil
                     </Button>
                     </td>
                 </tr>
@@ -319,7 +370,7 @@ function App() {
         </Card>
       )}
 
-      {/* --- DETAY MODALI (POPUP) --- */}
+      {/* --- DETAY MODALI --- */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
         <Modal.Header closeButton>
           <Modal.Title>Tez Detayları</Modal.Title>
@@ -340,7 +391,6 @@ function App() {
                       <p><strong>Yıl:</strong> {selectedThesis.year}</p>
                       <p><strong>Sayfa Sayısı:</strong> {selectedThesis.pagenum}</p>
                   </Col>
-                  {/* Burası şu an ID gösterir. İstersen bunları da eşleştirebiliriz ama detay aramada çözülecek */}
                   <Col md={6}>
                       <p><strong>Yazar ID:</strong> {selectedThesis.authorid}</p>
                       <p><strong>Danışman ID:</strong> {selectedThesis.supervisorid}</p>
@@ -354,6 +404,55 @@ function App() {
           <Button variant="secondary" onClick={() => setShowModal(false)}>
             Kapat
           </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* --- KİŞİ EKLEME MODALI (YENİ) --- */}
+      <Modal show={showPersonModal} onHide={() => setShowPersonModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Yeni Kişi Ekle</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Ad</Form.Label>
+              <Form.Control type="text" placeholder="Örn: Ahmet" 
+                value={newPerson.firstName} 
+                onChange={(e) => setNewPerson({...newPerson, firstName: e.target.value})} 
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Soyad</Form.Label>
+              <Form.Control type="text" placeholder="Örn: Yılmaz" 
+                value={newPerson.lastName} 
+                onChange={(e) => setNewPerson({...newPerson, lastName: e.target.value})} 
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Ünvan (Title)</Form.Label>
+              <Form.Select 
+                value={newPerson.title} 
+                onChange={(e) => setNewPerson({...newPerson, title: e.target.value})}
+              >
+                <option value="Student">Student</option>
+                <option value="Dr.">Dr.</option>
+                <option value="Prof.">Prof.</option>
+                <option value="Assoc. Prof.">Assoc. Prof.</option>
+                <option value="Lecturer">Lecturer</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control type="email" placeholder="email@univ.edu" 
+                 value={newPerson.email} 
+                 onChange={(e) => setNewPerson({...newPerson, email: e.target.value})}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowPersonModal(false)}>İptal</Button>
+          <Button variant="primary" onClick={handleAddPerson}>Kaydet</Button>
         </Modal.Footer>
       </Modal>
 

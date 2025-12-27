@@ -1,23 +1,40 @@
 import axios from 'axios';
 
-// DİKKAT: Adres tırnak işaretleri içinde olmalı.
-// Render'dan aldığın backend linki:
+// Render'daki Backend adresin
 const BASE_URL = "https://db-final-kh6u.onrender.com";
 
 export const api = axios.create({
-    // Buraya dikkat: değişkenin adı BASE_URL olmalı.
-    // Eğer buraya yanlışlıkla 'base' yazdıysan veya tırnak hatası yaptıysan o hatayı alırsın.
-    baseURL: BASE_URL, 
+    baseURL: BASE_URL,
 });
 
+// GET (Tüm Tezleri Çek)
 export const getTheses = () => api.get('/api/theses');
-export const addThesis = (thesisData) => api.post('/api/theses', thesisData);
-export const deleteThesis = (id) => api.delete(`/api/theses/${id}`);
-// ... önceki kodlar aynı kalsın ...
 
+// POST (Tez Ekle)
+export const addThesis = (data) => api.post('/api/theses', data);
+
+// DELETE (Tez Sil)
+export const deleteThesis = (id) => api.delete(`/api/theses/${id}`);
+
+// --- ARAMA FONKSİYONU ---
+export const searchTheses = (filters) => {
+    const cleanParams = {};
+    
+    for (const key in filters) {
+        if (filters[key] !== "" && filters[key] !== null && filters[key] !== undefined) {
+            cleanParams[key] = filters[key];
+        }
+    }
+
+    console.log("Backend'e giden parametreler:", cleanParams);
+    return api.get('/api/search', { params: cleanParams });
+};
+
+// Dropdown Verileri (Kişiler, Enstitüler vb.)
 export const getPeople = () => api.get('/api/people');
 export const getInstitutes = () => api.get('/api/institutes');
 export const getLanguages = () => api.get('/api/languages');
 export const getTypes = () => api.get('/api/types');
 
-export const searchTheses = (params) => api.get('/api/search', { params });
+// Yeni Kişi Ekle (Frontend sadece istek atar, SQL sorgusu yazmaz)
+export const addPerson = (personData) => api.post('/api/people', personData);

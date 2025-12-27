@@ -86,6 +86,25 @@ app.get("/api/people", async (req, res) => {
   } catch (err) { res.status(500).json(err); }
 });
 
+// --- YENİ KİŞİ EKLEME (Bu eksikti) ---
+app.post("/api/people", async (req, res) => {
+  try {
+    const { firstName, lastName, title, email } = req.body;
+    
+    const query = `
+      INSERT INTO People (FirstName, LastName, Title, Email)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *;
+    `;
+    
+    const newPerson = await pool.query(query, [firstName, lastName, title, email]);
+    res.json(newPerson.rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Kişi eklenirken hata: " + err.message);
+  }
+});
+
 // Enstitüleri Getir
 app.get("/api/institutes", async (req, res) => {
   try {
