@@ -11,3 +11,5 @@ export const api = axios.create({
 });
 
 export const getTheses = () => api.get('/api/theses');
+export const addThesis = (thesisData) => api.post('/api/theses', thesisData);
+export const deleteThesis = (id) => api.delete(`/api/theses/${id}`);
