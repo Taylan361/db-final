@@ -148,3 +148,47 @@ h2, h5, .text-primary {
   from { opacity: 0; transform: translateX(100%); }
   to { opacity: 1; transform: translateX(0); }
 }
+
+/* --- APP.CSS EN ALTINA EKLE --- */
+
+/* 1. Sayfa Yüklenme Animasyonu (Fade In Up) */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px); /* Aşağıdan başla */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0); /* Yerine gel */
+  }
+}
+
+/* Bu animasyonu kartlara ve ana konteynera uygula */
+.container, .card, .modal-content {
+  animation: fadeInUp 0.8s ease-out forwards; /* 0.8 saniyede gelsin */
+}
+
+/* 2. Tablo Satırlarına Havalı Efekt */
+tbody tr {
+  transition: all 0.3s ease; /* Yumuşak geçiş */
+  border-left: 3px solid transparent;
+}
+
+tbody tr:hover {
+  background-color: rgba(0, 74, 153, 0.05) !important; /* Hafif mavi arka plan */
+  transform: scale(1.01); /* Çok hafif büyüsün */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Gölge ekle */
+  border-left: 3px solid #004a99; /* Solda mavi çizgi çıkar */
+  cursor: pointer;
+}
+
+/* 3. Yükleniyor Yazısı İçin Yanıp Sönme Animasyonu */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.loading-text {
+  animation: pulse 1.5s infinite ease-in-out;
+}
