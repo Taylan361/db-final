@@ -224,7 +224,7 @@ function App() {
         <Navbar bg="white" expand="lg" className="shadow-lg rounded-3 mb-5 px-4 py-3 border-bottom">
           <Container fluid>
             <Navbar.Brand href="#" className="fw-bold text-dark d-flex align-items-center" style={{ fontSize: '1.6rem' }}>
-              <span style={{ marginRight: '12px', fontSize: '1.8rem' }}>🎓</span> Thesis Systems
+              <span style={{ marginRight: '12px', fontSize: '1.8rem' }}></span> Thesis Systems
             </Navbar.Brand>
             <Navbar.Toggle />
             <Navbar.Collapse>
@@ -242,8 +242,8 @@ function App() {
         <Card className="mb-4 shadow-sm border-0" style={{ borderTop: "4px solid var(--yok-blue)", backgroundColor: "white" }}>
           <Card.Header className="bg-white border-bottom-0 pt-3">
             <Tabs activeKey={searchKey} onSelect={(k) => setSearchKey(k)} className="mb-3 custom-search-tabs">
-              <Tab eventKey="simple" title="🔍 Simple Search"></Tab>
-              <Tab eventKey="detailed" title="⚙️ Detailed Search"></Tab>
+              <Tab eventKey="simple" title=" Simple Search"></Tab>
+              <Tab eventKey="detailed" title=" Detailed Search"></Tab>
             </Tabs>
           </Card.Header>
           <Card.Body className="pt-0">
@@ -352,7 +352,7 @@ function App() {
 
         {/* THESIS LIST */}
         <Card className="shadow-lg border-0 overflow-hidden">
-          <Card.Header className="bg-white p-4 border-bottom d-flex justify-content-between align-items-center"><h5 className="m-0 fw-bold text-dark">📚 Thesis List</h5><Button variant="success" size="md" className="shadow-sm px-4 rounded-pill" onClick={() => setShowAddThesisModal(true)}>+ Add New Thesis</Button></Card.Header>
+          <Card.Header className="bg-white p-4 border-bottom d-flex justify-content-between align-items-center"><h5 className="m-0 fw-bold text-dark"> Thesis List</h5><Button variant="success" size="md" className="shadow-sm px-4 rounded-pill" onClick={() => setShowAddThesisModal(true)}>+ Add New Thesis</Button></Card.Header>
           {loading ? (
             <div className="text-center p-5">
               <Spinner animation="border" variant="primary" />
